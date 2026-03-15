@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ProPass - Professional Studio V34.4</title>
+    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    
+    <style>
+        :root {
+            --bg: #050505; --sidebar: rgba(17, 17, 17, 0.85); --accent: #00ff88;
+            --accent-glow: rgba(0, 255, 136, 0.3); --danger: #ff3333;
+            --text: #ffffff; --border: #333333; --glass: rgba(255, 255, 255, 0.05);
+            --grid-line: rgba(255, 255, 255, 0.05); --input-bg: #1a1a1a; --btn-text: #000000;
+        }
+
+        body.light-mode {
+            --bg: #f0f0f3; --sidebar: rgba(255, 255, 255, 0.85); --accent: #0066ff;
+            --accent-glow: rgba(0, 102, 255, 0.2); --danger: #e60000;
+            --text: #111111; --border: #d1d1d6; --glass: rgba(0, 0, 0, 0.03);
+            --grid-line: rgba(0, 0, 0, 0.05); --input-bg: #ffffff; --btn-text: #ffffff;
+        }
+
+        .animated-logo { margin: 0; font-weight: 900; font-size: 26px; cursor: default; letter-spacing: -1px; }
+        .animated-logo .pro { color: var(--text); transition: transform 0.3s ease; display: inline-block; }
+        .animated-logo .pass { 
+            background: linear-gradient(110deg, var(--accent) 0%, rgba(255,255,255,0.8) 40%, var(--accent) 80%);
+            background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text;
+            animation: textShine 3s linear infinite; display: inline-block;
+            transition: transform 0.3s ease, text-shadow 0.3s ease;
+        }
+        .animated-logo:hover .pro { transform: translateX(-3px); }
+        .animated-logo:hover .pass { transform: translateX(3px); text-shadow: 0 0 20px var(--accent-glow); }
+        
+        @keyframes textShine { to { background-position: 200% center; } }
+        @keyframes slideInLeft { from { transform: translateX(-40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeScaleUp { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes slideUpFade { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        body, .btn, input, select, #action-bar { transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease; }
+        body { margin: 0; font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100dvh; width: 100vw; overflow: hidden; }
+
+        #sidebar { 
+            width: 320px; min-width: 320px; background: var(--sidebar); border-right: 1px solid var(--border); 
+            display: flex; flex-direction: column; padding: 25px; z-index: 100; overflow-y: auto; 
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            animation: slideInLeft 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        #theme-toggle { background: var(--glass); border: 1px solid var(--border); color: var(--text); border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; flex-shrink: 0; }
+        #theme-toggle:hover { transform: rotate(15deg) scale(1.1); }
+
+        #workspace-area { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; opacity: 0; animation: fadeScaleUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s forwards; }
+        #tabs-bar { height: 46px; background: var(--sidebar); border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; padding: 0 15px; gap: 5px; overflow-x: auto; scrollbar-width: none; z-index: 90;}
+        #tabs-bar::-webkit-scrollbar { display: none; }
+
+        .tab { background: var(--glass); padding: 10px 18px; border-radius: 10px 10px 0 0; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 10px; color: #888; border: 1px solid transparent; border-bottom: none; white-space: nowrap; transition: 0.2s; }
+        .tab.active { background: var(--bg); color: var(--accent); border-color: var(--border); }
+        .tab-close { font-size: 14px; padding: 2px 6px; border-radius: 50%; transition: 0.2s; }
+        .tab-close:hover { background: var(--danger); color: white; }
+        .tab-add { padding: 10px 15px; color: var(--text); font-size: 18px; cursor: pointer; opacity: 0.6; }
+
+        #viewport { flex: 1; position: relative; overflow: hidden; cursor: grab; background-image: linear-gradient(to right, var(--grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px); background-size: 40px 40px; touch-action: none; z-index: 10; }
+        #canvas-wrapper { position: absolute; top: 0; left: 0; will-change: transform; transform-origin: 0 0; }
+        canvas { background: white; box-shadow: 0 15px 50px rgba(0,0,0,0.25); border-radius: 2px; display: block; }
+
+        .group { margin-bottom: 20px; background: var(--glass); padding: 15px; border-radius: 12px; border: 1px solid var(--border); opacity: 0; animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        .group:nth-child(2) { animation-delay: 0.1s; }
+        .group:nth-child(3) { animation-delay: 0.2s; }
+
+        label { font-size: 11px; color: #888; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; display: flex; justify-content: space-between; margin-bottom: 12px; }
+        .btn { padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: 13px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.1s ease; }
+        .btn-main { background: var(--accent); color: var(--btn-text); box-shadow: 0 4px 15px var(--accent-glow); }
+        .btn-sub { background: var(--glass); color: var(--text); border: 1px solid var(--border); }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+
+        input, select { width: 100%; background: var(--input-bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; box-sizing: border-box; outline: none; }
+        input[type="number"], select { padding: 10px; font-size: 13px; font-weight: 600; }
+        
+        input[type="range"] { -webkit-appearance: none; appearance: none; height: 6px; padding: 0; margin-top: 5px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+
+        .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; margin-top: 12px; padding: 2px 0; font-weight: 500; }
+        input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; margin: 0; }
+        
+        .flex-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .flex-col { flex: 1; display: flex; flex-direction: column; }
+        .sub-label { font-size: 10px; color: #888; margin-bottom: 4px; }
+
+        #action-bar { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--sidebar); padding: 10px 20px; border-radius: 50px; display: flex; gap: 15px; border: 1px solid var(--border); box-shadow: 0 15px 40px rgba(0,0,0,0.4); z-index: 100; backdrop-filter: blur(20px); opacity: 0; animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s forwards; }
+        #toast { position: absolute; top: -50px; left: 50%; transform: translateX(-50%); background: var(--accent); color: var(--btn-text); padding: 12px 30px; border-radius: 50px; font-weight: bold; z-index: 1000; transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
+        #toast.show { top: 20px; }
+        #toast.error { background: var(--danger); color: white; }
+
+        @media (max-width: 850px) {
+            body { flex-direction: column; }
+            #workspace-area { order: 1; flex: 1; min-height: 45dvh; }
+            #sidebar { order: 2; width: 100%; height: 45dvh; padding-bottom: 100px; }
+            #action-bar { bottom: 15px; width: 90%; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="toast">Ready</div>
+
+<div id="sidebar">
+    <div class="header">
+        <div>
+            <h2 class="animated-logo"><span class="pro">PRO</span><span class="pass">PASS</span></h2>
+            <span style="font-size: 10px; color: #777; letter-spacing: 0.5px;">STUDIO V34.4</span>
+        </div>
+        <button id="theme-toggle" onclick="toggleTheme()" title="Switch Theme">Dark</button>
+    </div>
+    
+    <div class="group" style="padding: 0; background: transparent; border: none;">
+        <button class="btn btn-main" onclick="document.getElementById('file-input').click()">Upload Photo</button>
+        <input type="file" id="file-input" hidden accept="image/jpeg, image/png, image/webp">
+        <div style="font-size: 11px; color: #666; text-align: center; margin-top: 8px;">Max 40MB | <b>Ctrl+V</b> to Paste</div>
+        <div class="btn-group">
+            <button class="btn btn-sub" onclick="clearCurrentProject()">Clear</button>
+            <button class="btn btn-sub" onclick="autoFit()">Center</button>
+        </div>
+    </div>
+
+    <div class="group">
+        <label>Presets & Grid</label>
+        <select id="preset-select" onchange="applyPreset()" style="margin-bottom: 12px;">
+            <option value="custom">-- Standard Sizes --</option>
+            <option value="in-pass">India Passport (35x45mm)</option>
+            <option value="in-stamp">India Stamp Size (20x25mm)</option>
+            <option value="us-visa">US Visa / Passport (2x2in)</option>
+            <option value="uk-pass">UK / EU Passport (35x45mm)</option>
+        </select>
+        <div class="flex-row">
+            <div class="flex-col">
+                <span class="sub-label">Width (px)</span>
+                <input type="number" id="w-input" value="413" min="50" oninput="updateStateAndRender()">
+            </div>
+            <div class="flex-col">
+                <span class="sub-label">Height (px)</span>
+                <input type="number" id="h-input" value="531" min="50" oninput="updateStateAndRender()">
+            </div>
+        </div>
+        <div class="flex-row">
+            <div class="flex-col">
+                <span class="sub-label">Copies</span>
+                <input type="number" id="num-input" value="4" min="1" oninput="updateStateAndRender()">
+            </div>
+            <div class="flex-col">
+                <span class="sub-label">Per Row</span>
+                <input type="number" id="col-input" value="4" min="1" oninput="updateStateAndRender()">
+            </div>
+        </div>
+        <div style="margin-top: 15px;">
+            <div style="display:flex; justify-content:space-between; font-size:11px;">Gap: <span id="gap-val">20px</span></div>
+            <input type="range" id="gap-input" value="20" min="0" max="100" oninput="updateStateAndRender()">
+        </div>
+        <label class="checkbox-label">
+            <input type="checkbox" id="cut-lines" checked onchange="updateStateAndRender()"> Show Cut Lines
+        </label>
+    </div>
+
+    <div class="group">
+        <label>Image Adjust</label>
+        <div style="margin-bottom: 10px;">
+            <div style="display:flex; justify-content:space-between; font-size:11px;">Brightness: <span id="bright-val">100%</span></div>
+            <input type="range" id="bright-input" value="100" min="50" max="150" oninput="updateStateAndRender()">
+        </div>
+        <div>
+            <div style="display:flex; justify-content:space-between; font-size:11px;">Contrast: <span id="cont-val">100%</span></div>
+            <input type="range" id="cont-input" value="100" min="50" max="150" oninput="updateStateAndRender()">
+        </div>
+        <button class="btn btn-sub" style="margin-top: 15px;" onclick="resetFilters()">Reset Filters</button>
+    </div>
+</div>
+
+<div id="workspace-area">
+    <div id="tabs-bar"></div>
+    <div id="viewport" oncontextmenu="return false;">
+        <div id="canvas-wrapper">
+            <canvas id="canvas"></canvas>
+        </div>
+        <div id="action-bar">
+            <button class="btn btn-sub" onclick="window.print()">Print</button>
+            <button class="btn btn-main" onclick="downloadImg()">Download</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const viewport = document.getElementById('viewport');
+    const wrapper = document.getElementById('canvas-wrapper');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    const cacheCanvas = document.createElement('canvas');
+    const cCtx = cacheCanvas.getContext('2d');
+
+    const inputs = {
+        num: document.getElementById('num-input'), col: document.getElementById('col-input'),
+        w: document.getElementById('w-input'), h: document.getElementById('h-input'),
+        gap: document.getElementById('gap-input'), cut: document.getElementById('cut-lines'),
+        bright: document.getElementById('bright-input'), cont: document.getElementById('cont-input'),
+        preset: document.getElementById('preset-select'), themeBtn: document.getElementById('theme-toggle')
+    };
+    
+    const vals = { gap: document.getElementById('gap-val'), bright: document.getElementById('bright-val'), cont: document.getElementById('cont-val') };
+    const tabsBar = document.getElementById('tabs-bar');
+    const toast = document.getElementById('toast');
+
+    const MAX_SIZE = 40 * 1024 * 1024;
+    let workspaces = {};
+    let activeId = null;
+    let tabCounter = 0;
+    let isDragging = false, startDrag = { x: 0, y: 0 }, ticking = false;
+
+    const PRESETS = {
+        'in-pass': { w: 413, h: 531 }, 'in-stamp': { w: 236, h: 295 },
+        'us-visa': { w: 600, h: 600 }, 'uk-pass': { w: 413, h: 531 }
+    };
+
+    function createWorkspace() {
+        tabCounter++;
+        const id = 'ws_' + Date.now();
+        workspaces[id] = { 
+            id, name: `Project ${tabCounter}`, img: null, copies: 4, cols: 4, 
+            pW: 413, pH: 531, gap: 20, cut: true, b: 100, c: 100, zoom: 1, pos: { x: 0, y: 0 } 
+        };
+        switchWorkspace(id);
+    }
+
+    function switchWorkspace(id) {
+        if (!workspaces[id]) return;
+        activeId = id; const ws = workspaces[id];
+        inputs.num.value = ws.copies; inputs.col.value = ws.cols; inputs.w.value = ws.pW; 
+        inputs.h.value = ws.pH; inputs.gap.value = ws.gap; inputs.cut.checked = ws.cut; 
+        inputs.bright.value = ws.b; inputs.cont.value = ws.c;
+        renderTabsUI(); applyTransform(); queueRender();
+    }
+
+    function renderTabsUI() {
+        tabsBar.innerHTML = '';
+        Object.values(workspaces).forEach(ws => {
+            const tab = document.createElement('div');
+            tab.className = `tab ${ws.id === activeId ? 'active' : ''}`;
+            tab.onclick = () => switchWorkspace(ws.id);
+            const nameSpan = document.createElement('span'); nameSpan.textContent = ws.name;
+            tab.appendChild(nameSpan);
+            const closeBtn = document.createElement('div'); closeBtn.className = 'tab-close'; closeBtn.textContent = '×';
+            closeBtn.onclick = (e) => { e.stopPropagation(); closeWorkspace(ws.id); };
+            tab.appendChild(closeBtn);
+            tabsBar.appendChild(tab);
+        });
+        const addBtn = document.createElement('div');
+        addBtn.className = 'tab-add'; addBtn.textContent = '+'; addBtn.onclick = createWorkspace;
+        tabsBar.appendChild(addBtn);
+    }
+
+    function closeWorkspace(id) {
+        if (Object.keys(workspaces).length === 1) { workspaces[id].img = null; queueRender(); return; }
+        delete workspaces[id];
+        if (activeId === id) switchWorkspace(Object.keys(workspaces)[0]);
+        else renderTabsUI();
+    }
+
+    function applyPreset() {
+        if (inputs.preset.value === 'custom') return;
+        const p = PRESETS[inputs.preset.value];
+        inputs.w.value = p.w; inputs.h.value = p.h;
+        updateStateAndRender(); showToast("Preset Applied");
+    }
+
+    function toggleTheme() {
+        const isLight = document.body.classList.toggle('light-mode');
+        inputs.themeBtn.textContent = isLight ? 'Light' : 'Dark';
+        queueRender();
+    }
+
+    function updateStateAndRender() {
+        if(!activeId) return;
+        const ws = workspaces[activeId];
+        ws.copies = parseInt(inputs.num.value) || 1; ws.cols = parseInt(inputs.col.value) || 1;
+        ws.pW = parseInt(inputs.w.value) || 50; ws.pH = parseInt(inputs.h.value) || 50;
+        ws.gap = parseInt(inputs.gap.value) || 0; ws.cut = inputs.cut.checked;
+        ws.b = parseInt(inputs.bright.value); ws.c = parseInt(inputs.cont.value);
+        queueRender();
+    }
+
+    function drawCanvas() {
+        const ws = workspaces[activeId];
+        const isLight = document.body.classList.contains('light-mode');
+        vals.gap.textContent = ws.gap + "px"; vals.bright.textContent = ws.b + "%"; vals.cont.textContent = ws.c + "%";
+        
+        if (!ws.img) {
+            canvas.width = 400; canvas.height = 300;
+            ctx.fillStyle = isLight ? "#e0e0e5" : "#111"; ctx.fillRect(0, 0, 400, 300);
+            ctx.fillStyle = isLight ? "#888" : "#444"; ctx.textAlign = "center"; ctx.font = "bold 14px Inter";
+            ctx.fillText("NO IMAGE LOADED", 200, 150); return;
+        }
+
+        const cols = Math.min(ws.copies, ws.cols), rows = Math.ceil(ws.copies / ws.cols);
+        canvas.width = (ws.pW * cols) + (ws.gap * (cols + 1));
+        canvas.height = (ws.pH * rows) + (ws.gap * (rows + 1));
+        
+        cacheCanvas.width = ws.pW; cacheCanvas.height = ws.pH;
+        const s = Math.max(ws.pW / ws.img.width, ws.pH / ws.img.height);
+        const sw = ws.pW / s, sh = ws.pH / s, sx = (ws.img.width - sw) / 2, sy = (ws.img.height - sh) / 2;
+        
+        cCtx.filter = `brightness(${ws.b}%) contrast(${ws.c}%)`;
+        cCtx.drawImage(ws.img, sx, sy, sw, sh, 0, 0, ws.pW, ws.pH);
+        
+        ctx.fillStyle = "white"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < ws.copies; i++) {
+            const c = i % ws.cols, r = Math.floor(i / ws.cols);
+            const x = ws.gap + (c * (ws.pW + ws.gap)), y = ws.gap + (r * (ws.pH + ws.gap));
+            ctx.drawImage(cacheCanvas, x, y);
+            if (ws.cut) { ctx.strokeStyle = "#ddd"; ctx.lineWidth = 1; ctx.strokeRect(x, y, ws.pW, ws.pH); }
+        }
+    }
+
+    function queueRender() { if(!activeId || ticking) return; ticking = true; requestAnimationFrame(() => { drawCanvas(); ticking = false; }); }
+
+    function autoFit() {
+        const ws = workspaces[activeId];
+        ws.zoom = Math.min((viewport.clientWidth - 80) / canvas.width, (viewport.clientHeight - 120) / canvas.height, 0.8);
+        ws.pos = { x: (viewport.clientWidth - canvas.width * ws.zoom) / 2, y: (viewport.clientHeight - canvas.height * ws.zoom) / 2 };
+        applyTransform();
+    }
+
+    function applyTransform() { const ws = workspaces[activeId]; wrapper.style.transform = `translate(${ws.pos.x}px, ${ws.pos.y}px) scale(${ws.zoom})`; }
+
+    viewport.onmousedown = (e) => { isDragging = true; startDrag = { x: e.clientX - workspaces[activeId].pos.x, y: e.clientY - workspaces[activeId].pos.y }; };
+    window.onmousemove = (e) => { if (isDragging) { workspaces[activeId].pos = { x: e.clientX - startDrag.x, y: e.clientY - startDrag.y }; applyTransform(); } };
+    window.onmouseup = () => isDragging = false;
+    viewport.onwheel = (e) => { e.preventDefault(); const ws = workspaces[activeId]; ws.zoom = Math.max(0.1, Math.min(5, ws.zoom * (e.deltaY > 0 ? 0.9 : 1.1))); applyTransform(); };
+
+    function validateAndLoad(file) {
+        if (!file || file.size > MAX_SIZE) return showToast(file ? "File too large (>40MB)" : "Invalid File", true);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => { workspaces[activeId].img = img; queueRender(); autoFit(); showToast("Image Ready"); };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    document.getElementById('file-input').onchange = (e) => validateAndLoad(e.target.files[0]);
+    window.onpaste = (e) => { const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1); if (item) validateAndLoad(item.getAsFile()); };
+
+    function downloadImg() { const link = document.createElement('a'); link.download = 'propass_export.png'; link.href = canvas.toDataURL(); link.click(); }
+    function showToast(m, err=false) { toast.textContent = m; toast.className = err ? 'show error' : 'show'; setTimeout(() => toast.classList.remove('show', 'error'), 2000); }
+    function clearCurrentProject() { if(confirm("Clear image?")) { workspaces[activeId].img = null; queueRender(); } }
+    function resetFilters() { inputs.bright.value = 100; inputs.cont.value = 100; updateStateAndRender(); }
+    window.onload = createWorkspace;
+</script>
+</body>
+</html>
